@@ -39,6 +39,7 @@ class DashboardScreen extends StatelessWidget {
 class _DashboardAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    print("hello");
     return SliverAppBar(
       expandedHeight: 180,
       pinned: true,
