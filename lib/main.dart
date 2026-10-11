@@ -1,4 +1,5 @@
 import 'package:darussalam_masjid/providers/app_providers.dart';
+import 'package:darussalam_masjid/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
@@ -31,7 +32,7 @@ class MasjidApp extends StatelessWidget {
           const Breakpoint(start: 801, end: 1920, name: DESKTOP),
         ],
       ),
-      home: const MainShell(),
+      home: const SplashScreen(),
     );
   }
 }

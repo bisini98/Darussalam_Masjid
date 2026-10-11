@@ -39,48 +39,46 @@ class DashboardScreen extends StatelessWidget {
 class _DashboardAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    print("hello");
     return SliverAppBar(
-      expandedHeight: 180,
+      expandedHeight: 160,
       pinned: true,
       backgroundColor: AppColors.primary,
       flexibleSpace: FlexibleSpaceBar(
+        // Remove title from here — it clashes with your custom content
         background: Container(
           decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
           child: Stack(
             children: [
-              // Decorative circles
               Positioned(top: -30, right: -30, child: _decorCircle(120, 0.06)),
               Positioned(top: 60, right: 80, child: _decorCircle(60, 0.08)),
               Positioned(bottom: -20, left: 60, child: _decorCircle(80, 0.05)),
-              // Content
               Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.mosque_rounded, color: AppColors.accentLight, size: 28),
-                          const SizedBox(width: 10),
+                          const Icon(Icons.mosque_rounded, color: AppColors.accentLight, size: 24),
+                          const SizedBox(width: 8),
                           Text(
                             'مسجد مجاهد',
                             style: GoogleFonts.amiri(
                               color: AppColors.accentLight,
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         'Mahal Management Dashboard',
                         style: GoogleFonts.notoSans(
                           color: Colors.white70,
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -90,12 +88,15 @@ class _DashboardAppBar extends StatelessWidget {
             ],
           ),
         ),
-        title: Text(
+      ),
+      title: Padding(
+        padding: const EdgeInsets.only(top: 30),
+        child: Text(
           'Dashboard',
           style: GoogleFonts.amiri(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 14),
       ),
+      titleSpacing: 16,
     );
   }
 
@@ -163,24 +164,24 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: stat.color.withOpacity(0.1), blurRadius: 12, offset: const Offset(0, 4))],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12), // reduced from 16
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6), // reduced from 8
             decoration: BoxDecoration(
               color: stat.color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(stat.icon, color: stat.color, size: 20),
+            child: Icon(stat.icon, color: stat.color, size: 20), // reduced from 20
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(stat.value, style: GoogleFonts.amiri(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-              Text(stat.title, style: GoogleFonts.notoSans(fontSize: 11, color: AppColors.textSecondary)),
+              Text(stat.value, style: GoogleFonts.amiri(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)), // reduced from 22
+              Text(stat.title, style: GoogleFonts.notoSans(fontSize: 14, color: AppColors.textSecondary)), // reduced from 11
             ],
           ),
         ],
