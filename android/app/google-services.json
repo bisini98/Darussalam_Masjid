@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "663436244746",
+    "project_id": "darussalam-masjid-5d6d7",
+    "storage_bucket": "darussalam-masjid-5d6d7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:663436244746:android:15a8d2c4d115c12ff12cf3",
+        "android_client_info": {
+          "package_name": "com.example.darussalam_masjid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYYfnWtCo0hemLoOVYIaEmAxyv01vzdHY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
