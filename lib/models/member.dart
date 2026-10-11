@@ -52,6 +52,10 @@ class Member {
   List<FamilyMember> familyMembers;
   DateTime joinedDate;
   String? notes;
+  String nameMl;
+  String fatherName;
+  Map<String, dynamic> extras;
+  Map<String, num> legacyMonths;
 
   Member({
     required this.id,
@@ -69,12 +73,20 @@ class Member {
     List<FamilyMember>? familyMembers,
     DateTime? joinedDate,
     this.notes,
+    this.nameMl = '',
+    this.fatherName = '',
+    this.extras = const {},
+    this.legacyMonths = const {},
   })  : familyMembers = familyMembers ?? [],
         joinedDate = joinedDate ?? DateTime.now();
 
   String get initials {
-    final parts = name.trim().split(' ');
+    final parts = name
+        .replaceAll(RegExp(r'[()]'), '')
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return parts.isNotEmpty ? parts[0][0].toUpperCase() : '?';
   }
 }

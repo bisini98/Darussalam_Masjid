@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../providers/app_providers.dart';
+import '../theme/app_theme.dart';
+import 'main_shell.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,9 +30,6 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<double> _fadeIn;
   late Animation<Offset> _slideIn;
 
-  // Hardcoded admin credentials (replace with real auth later)
-  static const _adminUser = 'admin';
-  static const _adminPass = 'masjid123';
 
   @override
   void initState() {
@@ -49,26 +53,37 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_formKey.currentState!.validate()) return;
     setState(() { _loading = true; _error = null; });
 
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 1200));
-
-    if (_username.text.trim() == _adminUser && _password.text == _adminPass) {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _username.text.trim(),
+        password: _password.text,
+      );
+      if (!mounted) return;
+      await context.read<AppProvider>().loadFromFirestore();
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const MainShell(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+    } on FirebaseAuthException {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const MainShell(),
-            transitionsBuilder: (_, anim, __, child) =>
-                FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+        setState(() {
+          _loading = false;
+          _error = 'Wrong email or password.';
+        });
       }
-    } else {
-      setState(() {
-        _loading = false;
-        _error = 'Invalid username or password.';
-      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Could not load data. Check internet and try again.';
+        });
+      }
     }
   }
 

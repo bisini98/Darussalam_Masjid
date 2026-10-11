@@ -1,9 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:darussalam_masjid/models/ledger.dart';
 import 'package:flutter/foundation.dart';
 import '../models/member.dart';
 import '../models/sadaqah.dart';
 
 class AppProvider extends ChangeNotifier {
+  final _db = FirebaseFirestore.instance;
   // ---- Members ----
+
   final List<Member> _members = [];
   String _searchQuery = '';
   String _selectedPlace = 'All';
@@ -19,6 +23,7 @@ class AppProvider extends ChangeNotifier {
       final q = _searchQuery.toLowerCase();
       list = list
           .where((m) =>
+      m.id == _searchQuery.trim() ||
       m.name.toLowerCase().contains(q) ||
           m.phone.contains(q) ||
           m.houseNumber.toLowerCase().contains(q) ||
@@ -141,6 +146,114 @@ class AppProvider extends ChangeNotifier {
   int get totalSeasons => _seasons.length;
 
   // ---- Seed Data ----
+
+  // ---- Firebase: categories, payments, loading ----
+  final List<PayCategory> _categories = [];
+  final List<Payment> _ledger = [];
+  List<PayCategory> get categories => _categories;
+
+  List<Payment> paymentsOf(String memberId) =>
+      _ledger.where((p) => p.memberId == memberId).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+  Member _memberFromMap(Map<String, dynamic> j) => Member(
+    id: j['id'],
+    name: '${j['name']} (${j['familyName']})',
+    nameMl: '${j['nameMl']} ${j['familyNameMl']}',
+    fatherName: j['father'] ?? '',
+    phone: j['phone'] ?? '',
+    mahalName: 'Darulsalam Masjid',
+    housePlace: j['area'],
+    houseNumber: '${j['slNo'] ?? ''}',
+    address: '',
+    extras: Map<String, dynamic>.from(j['extras'] ?? {}),
+    legacyMonths: Map<String, num>.from(j['legacyMonths'] ?? {}),
+  );
+
+  Future<void> loadFromFirestore() async {
+    final cats = await _db.collection('categories').get();
+    _categories
+      ..clear()
+      ..addAll(cats.docs.map((d) => PayCategory.fromJson(d.data())));
+    final ms = await _db.collection('members').get();
+    _members
+      ..clear()
+      ..addAll(ms.docs.map((d) => _memberFromMap(d.data())));
+    notifyListeners();
+  }
+
+  Future<void> loadPaymentsFor(String memberId) async {
+    final q = await _db
+        .collection('payments')
+        .where('memberId', isEqualTo: memberId)
+        .get();
+    _ledger.removeWhere((p) => p.memberId == memberId);
+    _ledger.addAll(q.docs.map((d) => Payment.fromJson(d.data())));
+    notifyListeners();
+  }
+
+  void addCategory(String name) {
+    final c = PayCategory(
+        id: name.toLowerCase().trim().replaceAll(' ', '_'), name: name.trim());
+    _categories.add(c);
+    _db.collection('categories').doc(c.id).set(c.toJson());
+    notifyListeners();
+  }
+
+  void addLedgerPayment(Payment p) {
+    _ledger.add(p);
+    _db.collection('payments').doc(p.id).set(p.toJson());
+    notifyListeners();
+  }
+
+  void updateLedgerPayment(Payment p) {
+    final i = _ledger.indexWhere((e) => e.id == p.id);
+    if (i != -1) {
+      _ledger[i] = p;
+      _db.collection('payments').doc(p.id).set(p.toJson());
+      notifyListeners();
+    }
+  }
+
+  void deleteLedgerPayment(String id) {
+    _ledger.removeWhere((p) => p.id == id);
+    _db.collection('payments').doc(id).delete();
+    notifyListeners();
+  }
+
+  /// Months already paid: old Excel grid + payments entered in the app.
+  Set<String> paidMonths(String memberId) {
+    final m = getMember(memberId);
+    final s = <String>{...?m?.legacyMonths.keys};
+    for (final p in _ledger.where(
+            (p) => p.memberId == memberId && p.categoryId == 'subscription')) {
+      s.addAll(p.months);
+    }
+    return s;
+  }
+
+  /// "He gave 500" -> which months does it cover (suggestion only).
+  List<String> suggestMonths(String memberId, double amount,
+      {double rate = 100, String from = '2026-01'}) {
+    final paid = paidMonths(memberId);
+    final out = <String>[];
+    var y = int.parse(from.substring(0, 4));
+    var mo = int.parse(from.substring(5));
+    var left = amount;
+    while (left >= rate && y < 2030) {
+      final key = '$y-${mo.toString().padLeft(2, '0')}';
+      if (!paid.contains(key)) {
+        out.add(key);
+        left -= rate;
+      }
+      if (++mo > 12) {
+        mo = 1;
+        y++;
+      }
+    }
+    return out;
+  }
+
   void seedSampleData() {
     // Sample places
     final places = ['Palat', 'Thazhe', 'Vadakke', 'Kizhakke', 'Padi'];

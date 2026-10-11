@@ -5,11 +5,19 @@ import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'theme/app_theme.dart';
 import 'screens/main_shell.dart';
+import 'package:darussalam_masjid/providers/app_providers.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:darussalam_masjid/screens/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(
     ChangeNotifierProvider(
-      create: (_) => AppProvider()..seedSampleData(),
+      create: (_) => AppProvider(),
       child: const MasjidApp(),
     ),
   );
