@@ -172,7 +172,7 @@ class _AddEditMemberScreenState extends State<AddEditMemberScreen> {
       p.updateMember(widget.member!);
     } else {
       p.addMember(Member(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: p.nextMemberId(),
         name: _name.text,
         phone: _phone.text,
         email: _email.text.isEmpty ? null : _email.text,
@@ -256,7 +256,7 @@ class _FamilyTile extends StatelessWidget {
         backgroundColor: AppColors.primary.withOpacity(0.1),
         child: Text(member.name[0], style: GoogleFonts.amiri(color: AppColors.primary, fontWeight: FontWeight.bold)),
       ),
-      title: Text(member.name, style: Theme.of(context).textTheme.titleMedium),
+      title:Text('#${member.id}  ${member.name}', style: Theme.of(context).textTheme.titleMedium),
       subtitle: Text('${member.relation}${member.age != null ? " • ${member.age} yrs" : ""}'),
       trailing: IconButton(icon: const Icon(Icons.delete_rounded, color: AppColors.error, size: 18), onPressed: onDelete),
       dense: true,

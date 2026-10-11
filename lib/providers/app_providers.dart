@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:darussalam_masjid/models/ledger.dart';
+import '../models/ledger.dart';
 import 'package:flutter/foundation.dart';
 import '../models/member.dart';
 import '../models/sadaqah.dart';
@@ -21,6 +21,8 @@ class AppProvider extends ChangeNotifier {
     }
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
+      final exact = list.where((m) => m.id == _searchQuery.trim()).toList();
+      if (exact.isNotEmpty) return exact;
       list = list
           .where((m) =>
       m.id == _searchQuery.trim() ||
@@ -52,22 +54,74 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addMember(Member m) {
-    _members.add(m);
+  // ---- Test mode: when ON, nothing is written to Firebase ----
+  bool testMode = true;
+  void setTestMode(bool v) {
+    testMode = v;
     notifyListeners();
   }
 
-  void updateMember(Member m) {
+  Future<void> _write(Future<void> Function() action) async {
+    if (testMode) return;
+    await action().timeout(const Duration(seconds: 15));
+  }
+
+  String nextMemberId() {
+    var max = 0;
+    for (final m in _members) {
+      final n = int.tryParse(m.id) ?? 0;
+      if (n > max && n < 100000) max = n;
+    }
+    return '${max + 1}';
+  }
+
+  Map<String, dynamic> _memberToMap(Member m) => {
+    'id': m.id,
+    'name': m.name,
+    'familyName': '',
+    'nameMl': m.nameMl,
+    'familyNameMl': '',
+    'father': m.fatherName,
+    'phone': m.phone,
+    'email': m.email,
+    'area': m.housePlace,
+    'slNo': m.houseNumber,
+    'address': m.address,
+    'age': m.age,
+    'occupation': m.occupation,
+    'notes': m.notes,
+    'isActive': m.isActive,
+    'extras': m.extras,
+    'familyMembers': m.familyMembers.map((f) => f.toJson()).toList(),
+  };
+
+  Future<void> addMember(Member m) async {
+    m.legacyMonths = {...m.legacyMonths};
+    m.extras = {...m.extras};
+    _members.add(m);
+    notifyListeners();
+    await _write(() => _db.collection('members').doc(m.id).set(_memberToMap(m)));
+  }
+
+  Future<void> updateMember(Member m) async {
     final idx = _members.indexWhere((e) => e.id == m.id);
     if (idx != -1) {
       _members[idx] = m;
       notifyListeners();
     }
+    await _write(() => _db
+        .collection('members')
+        .doc(m.id)
+        .set(_memberToMap(m), SetOptions(merge: true)));
   }
 
-  void deleteMember(String id) {
-    _members.removeWhere((m) => m.id == id);
+
+  Future<void> deleteMember(String id) async {
+    final m = getMember(id);
+    if (m == null) return;
+    m.isActive = false;
     notifyListeners();
+    await _write(() => _db.collection('members').doc(id).update({'isActive': false}));
   }
 
   Member? getMember(String id) {
@@ -156,19 +210,36 @@ class AppProvider extends ChangeNotifier {
       _ledger.where((p) => p.memberId == memberId).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
 
-  Member _memberFromMap(Map<String, dynamic> j) => Member(
-    id: j['id'],
-    name: '${j['name']} (${j['familyName']})',
-    nameMl: '${j['nameMl']} ${j['familyNameMl']}',
-    fatherName: j['father'] ?? '',
-    phone: j['phone'] ?? '',
-    mahalName: 'Darulsalam Masjid',
-    housePlace: j['area'],
-    houseNumber: '${j['slNo'] ?? ''}',
-    address: '',
-    extras: Map<String, dynamic>.from(j['extras'] ?? {}),
-    legacyMonths: Map<String, num>.from(j['legacyMonths'] ?? {}),
-  );
+  Member _memberFromMap(Map<String, dynamic> j) {
+    String join(String a, String b, {bool bracket = false}) {
+      a = a.trim();
+      b = b.trim();
+      if (b.isEmpty) return a;
+      return bracket ? '$a ($b)' : '$a $b';
+    }
+
+    return Member(
+      id: '${j['id']}',
+      name: join('${j['name'] ?? ''}', '${j['familyName'] ?? ''}', bracket: true),
+      nameMl: join('${j['nameMl'] ?? ''}', '${j['familyNameMl'] ?? ''}'),
+      fatherName: j['father'] ?? '',
+      phone: j['phone'] ?? '',
+      email: j['email'],
+      mahalName: 'Darulsalam Masjid',
+      housePlace: j['area'] ?? '',
+      houseNumber: '${j['slNo'] ?? ''}',
+      address: j['address'] ?? '',
+      age: j['age'],
+      occupation: j['occupation'],
+      notes: j['notes'],
+      isActive: j['isActive'] ?? true,
+      familyMembers: ((j['familyMembers'] ?? []) as List)
+          .map((f) => FamilyMember.fromJson(Map<String, dynamic>.from(f)))
+          .toList(),
+      extras: Map<String, dynamic>.from(j['extras'] ?? {}),
+      legacyMonths: Map<String, num>.from(j['legacyMonths'] ?? {}),
+    );
+  }
 
   Future<void> loadFromFirestore() async {
     final cats = await _db.collection('categories').get();
@@ -192,33 +263,100 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addCategory(String name) {
-    final c = PayCategory(
-        id: name.toLowerCase().trim().replaceAll(' ', '_'), name: name.trim());
-    _categories.add(c);
-    _db.collection('categories').doc(c.id).set(c.toJson());
+  String addCategory(String name) {
+    final id = name.toLowerCase().trim().replaceAll(RegExp(r'\s+'), '_');
+    if (_categories.any((c) => c.id == id)) return id;
+    _categories.add(PayCategory(id: id, name: name.trim()));
     notifyListeners();
+    _write(() => _db
+        .collection('categories')
+        .doc(id)
+        .set({'id': id, 'name': name.trim(), 'builtIn': false}));
+    return id;
   }
 
-  void addLedgerPayment(Payment p) {
+  /// Marks months as paid on the member (single source for the month grid).
+  Future<void> _setMonths(String memberId, List<String> months, double perMonth) async {
+    final m = getMember(memberId);
+    if (m == null || months.isEmpty) return;
+    for (final ym in months) {
+      m.legacyMonths[ym] = perMonth;
+    }
+    notifyListeners();
+    await _write(() => _db.collection('members').doc(memberId).update({
+      for (final ym in months) FieldPath(['legacyMonths', ym]): perMonth,
+    }));
+  }
+
+  Future<void> _clearMonths(String memberId, List<String> months) async {
+    final m = getMember(memberId);
+    if (m == null || months.isEmpty) return;
+    for (final ym in months) {
+      m.legacyMonths.remove(ym);
+    }
+    notifyListeners();
+    await _write(() => _db.collection('members').doc(memberId).update({
+      for (final ym in months) FieldPath(['legacyMonths', ym]): FieldValue.delete(),
+    }));
+  }
+
+  Future<void> addLedgerPayment(Payment p) async {
     _ledger.add(p);
-    _db.collection('payments').doc(p.id).set(p.toJson());
     notifyListeners();
-  }
-
-  void updateLedgerPayment(Payment p) {
-    final i = _ledger.indexWhere((e) => e.id == p.id);
-    if (i != -1) {
-      _ledger[i] = p;
-      _db.collection('payments').doc(p.id).set(p.toJson());
-      notifyListeners();
+    await _write(() => _db.collection('payments').doc(p.id).set(p.toJson()));
+    if (p.categoryId == 'subscription') {
+      await _setMonths(p.memberId, p.months, p.amount / (p.months.isEmpty ? 1 : p.months.length));
     }
   }
 
-  void deleteLedgerPayment(String id) {
-    _ledger.removeWhere((p) => p.id == id);
-    _db.collection('payments').doc(id).delete();
+  Future<void> updateLedgerPayment(Payment p) async {
+    final i = _ledger.indexWhere((e) => e.id == p.id);
+    if (i == -1) return;
+    final old = _ledger[i];
+    _ledger[i] = p;
     notifyListeners();
+    await _write(() => _db.collection('payments').doc(p.id).set(p.toJson()));
+    if (old.categoryId == 'subscription') await _clearMonths(old.memberId, old.months);
+    if (p.categoryId == 'subscription') {
+      await _setMonths(p.memberId, p.months, p.amount / (p.months.isEmpty ? 1 : p.months.length));
+    }
+  }
+
+  Future<void> deleteLedgerPayment(Payment p) async {
+    _ledger.removeWhere((e) => e.id == p.id);
+    notifyListeners();
+    await _write(() => _db.collection('payments').doc(p.id).delete());
+    if (p.categoryId == 'subscription') await _clearMonths(p.memberId, p.months);
+  }
+
+  /// Usual monthly amount for this member (latest paid month), default 100.
+  double monthlyRate(String memberId) {
+    final m = getMember(memberId);
+    if (m == null) return 100;
+    final keys = m.legacyMonths.keys.toList()..sort();
+    for (final k in keys.reversed) {
+      final v = m.legacyMonths[k] ?? 0;
+      if (v > 0) return v.toDouble();
+    }
+    return 100;
+  }
+
+  /// Months from Jan 2026 up to this month that are not paid.
+  List<String> dueMonths(String memberId, {String from = '2026-01'}) {
+    final paid = paidMonths(memberId);
+    final now = DateTime.now();
+    final out = <String>[];
+    var y = int.parse(from.substring(0, 4));
+    var mo = int.parse(from.substring(5));
+    while (y < now.year || (y == now.year && mo <= now.month)) {
+      final key = '$y-${mo.toString().padLeft(2, '0')}';
+      if (!paid.contains(key)) out.add(key);
+      if (++mo > 12) {
+        mo = 1;
+        y++;
+      }
+    }
+    return out;
   }
 
   /// Months already paid: old Excel grid + payments entered in the app.

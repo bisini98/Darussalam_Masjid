@@ -1,14 +1,13 @@
-import 'package:darussalam_masjid/providers/app_providers.dart';
-import 'package:darussalam_masjid/screens/splash_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'theme/app_theme.dart';
-import 'screens/main_shell.dart';
-import 'package:darussalam_masjid/providers/app_providers.dart';
+import 'providers/app_providers.dart';
+import 'screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'package:darussalam_masjid/screens/splash_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

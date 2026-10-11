@@ -60,7 +60,7 @@ class _SearchAndFilter extends StatelessWidget {
               TextField(
                 onChanged: p.setSearchQuery,
                 decoration: InputDecoration(
-                  hintText: 'Search by name, phone or house no...',
+                  hintText: 'Search by member ID, name or phone...',
                   prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textLight),
                   suffixIcon: p.searchQuery.isNotEmpty
                       ? IconButton(
@@ -139,8 +139,7 @@ class _MemberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = Provider.of<AppProvider>(context, listen: false);
-    final paidSeasons = p.activeSeasons.where((s) => p.hasMemberPaidForSeason(member.id, s.id)).length;
-    final totalActive = p.activeSeasons.length;
+    final dues = p.dueMonths(member.id).length;
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -175,7 +174,7 @@ class _MemberCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(member.name, style: Theme.of(context).textTheme.titleMedium),
+                  Text('#${member.id}  ${member.name}', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 3),
                   Row(
                     children: [
@@ -207,22 +206,21 @@ class _MemberCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (totalActive > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: paidSeasons == totalActive ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '$paidSeasons/$totalActive paid',
-                      style: GoogleFonts.notoSans(
-                        fontSize: 11,
-                        color: paidSeasons == totalActive ? AppColors.success : AppColors.warning,
-                        fontWeight: FontWeight.w600,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (dues == 0 ? AppColors.success : AppColors.warning).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    dues == 0 ? 'Up to date' : '$dues months due',
+                    style: GoogleFonts.notoSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: dues == 0 ? AppColors.success : AppColors.warning,
                     ),
                   ),
+                ),
                 const SizedBox(height: 6),
                 const Icon(Icons.chevron_right_rounded, color: AppColors.textLight),
               ],

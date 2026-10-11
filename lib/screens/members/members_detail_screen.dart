@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import 'add_edit_member_screen.dart';
 import '../sadaqah/add_payment_dialog.dart';
 import '../receipts/receipt_screen.dart';
+import 'member_payments_section.dart';
 
 class MemberDetailScreen extends StatelessWidget {
   final String memberId;
@@ -48,7 +49,7 @@ class _MemberDetailView extends StatelessWidget {
                 const SizedBox(height: 16),
                 _FamilyCard(member: member),
                 const SizedBox(height: 16),
-                _SadaqahSection(member: member),
+                MemberPaymentsSection(member: member),
                 const SizedBox(height: 32),
               ]),
             ),
@@ -119,14 +120,18 @@ class _InfoCard extends StatelessWidget {
       icon: Icons.person_rounded,
       child: Column(
         children: [
+          _Row('Member ID', member.id, Icons.badge_rounded),
+          if (member.nameMl.trim().isNotEmpty)
+            _Row('Name (Malayalam)', member.nameMl, Icons.translate_rounded),
+          if (member.fatherName.isNotEmpty)
+            _Row('Father', member.fatherName, Icons.person_outline_rounded),
           _Row('Phone', member.phone, Icons.phone_rounded),
-          _Row('House Number', member.houseNumber, Icons.home_rounded),
           _Row('Place / Area', member.housePlace, Icons.location_on_rounded),
-          _Row('Address', member.address, Icons.map_rounded),
+          _Row('Serial No.', member.houseNumber, Icons.home_rounded),
+          if (member.address.isNotEmpty) _Row('Address', member.address, Icons.map_rounded),
           if (member.age != null) _Row('Age', '${member.age} years', Icons.cake_rounded),
           if (member.occupation != null) _Row('Occupation', member.occupation!, Icons.work_rounded),
           if (member.email != null) _Row('Email', member.email!, Icons.email_rounded),
-          _Row('Member Since', _formatDate(member.joinedDate), Icons.calendar_today_rounded),
         ],
       ),
     );
@@ -172,92 +177,6 @@ class _FamilyCard extends StatelessWidget {
   }
 }
 
-class _SadaqahSection extends StatelessWidget {
-  final Member member;
-  const _SadaqahSection({required this.member});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AppProvider>(
-      builder: (context, p, _) {
-        final payments = p.getPaymentsByMember(member.id);
-        final seasons = p.seasons;
-
-        return _Card(
-          title: 'Sadaqah Payments',
-          icon: Icons.volunteer_activism_rounded,
-          action: TextButton.icon(
-            onPressed: () => showDialog(
-              context: context,
-              builder: (_) => AddPaymentDialog(member: member),
-            ),
-            icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
-            label: Text('Add', style: GoogleFonts.notoSans(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
-          ),
-          child: Column(
-            children: [
-              // Season-wise status
-              ...seasons.map((s) {
-                final paid = payments.where((pay) => pay.seasonId == s.id).toList();
-                final hasPaid = paid.isNotEmpty;
-                final totalPaid = paid.fold(0.0, (sum, pay) => sum + pay.amount);
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: hasPaid ? AppColors.success.withOpacity(0.05) : AppColors.warning.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: hasPaid ? AppColors.success.withOpacity(0.2) : AppColors.warning.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        hasPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
-                        color: hasPaid ? AppColors.success : AppColors.warning,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(s.name, style: Theme.of(context).textTheme.titleMedium),
-                            Text(s.category, style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ),
-                      ),
-                      if (hasPaid) ...[
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('₹${totalPaid.toStringAsFixed(0)}', style: GoogleFonts.notoSans(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 14)),
-                            InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => ReceiptScreen(payment: paid.last, member: member)),
-                              ),
-                              child: Text('View Receipt', style: GoogleFonts.notoSans(color: AppColors.primary, fontSize: 11, decoration: TextDecoration.underline)),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        Text('Pending', style: GoogleFonts.notoSans(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.w600)),
-                      ],
-                    ],
-                  ),
-                );
-              }),
-              if (seasons.isEmpty)
-                Text('No seasons created yet.', style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
 
 // ─── Shared Widgets ─────────────────────────────────────────────
 class _Card extends StatelessWidget {

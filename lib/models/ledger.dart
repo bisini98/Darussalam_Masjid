@@ -1,5 +1,6 @@
-/// NEW FILE: lib/models/ledger.dart
-/// Categories (Subscription, Kit, Meat, Rice, ...) and the payments recorded against them.
+import 'package:intl/intl.dart';
+import 'sadaqah.dart';
+
 
 class PayCategory {
   final String id;
@@ -61,4 +62,23 @@ class Payment {
         'months': months,
         'source': source,
       };
+
+
+  SadaqahPayment toReceipt(String memberName, String categoryName) {
+    final monthsText = months.isEmpty
+        ? ''
+        : 'Months: ${months.map((k) => DateFormat('MMM yyyy').format(DateTime.parse('$k-01'))).join(', ')}';
+    return SadaqahPayment(
+      id: id,
+      memberId: memberId,
+      memberName: memberName,
+      seasonId: categoryId,
+      seasonName: categoryName,
+      amount: amount,
+      status: PaymentStatus.paid,
+      paymentDate: date,
+      receiptNumber: receiptNo.isEmpty ? '-' : receiptNo,
+      adminNote: [monthsText, note].where((s) => s.isNotEmpty).join(' • '),
+    );
+  }
 }

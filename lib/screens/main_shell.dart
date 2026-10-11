@@ -4,8 +4,7 @@ import 'package:responsive_framework/responsive_framework.dart';
 import '../theme/app_theme.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'members/members_screen.dart';
-import 'sadaqah/sadaqah_screen.dart';
-import 'receipts/receipts_screen.dart';
+import 'categories/categories_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -20,15 +19,13 @@ class _MainShellState extends State<MainShell> {
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
     _NavItem(icon: Icons.people_rounded, label: 'Members'),
-    _NavItem(icon: Icons.volunteer_activism_rounded, label: 'Sadaqah'),
-    _NavItem(icon: Icons.receipt_long_rounded, label: 'Receipts'),
+    _NavItem(icon: Icons.category_rounded, label: 'Categories'),
   ];
 
   final List<Widget> _screens = const [
     DashboardScreen(),
     MembersScreen(),
-    SadaqahScreen(),
-    ReceiptsScreen(),
+    CategoriesScreen(),
   ];
 
   @override

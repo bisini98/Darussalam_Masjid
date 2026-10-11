@@ -21,10 +21,6 @@ class DashboardScreen extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 _StatsGrid(),
                 const SizedBox(height: 24),
-                _ActiveSeasonsCard(),
-                const SizedBox(height: 24),
-                _RecentPaymentsCard(),
-                const SizedBox(height: 24),
                 _PlaceWiseChart(),
                 const SizedBox(height: 32),
               ]),
@@ -118,8 +114,8 @@ class _StatsGrid extends StatelessWidget {
         final stats = [
           _Stat('Total Members', p.totalMembers.toString(), Icons.people_rounded, AppColors.primary),
           _Stat('Family Members', p.totalFamilyMembers.toString(), Icons.family_restroom_rounded, AppColors.primaryLighter),
-          _Stat('Total Collected', '₹${_formatAmount(p.totalCollectedAllTime)}', Icons.account_balance_wallet_rounded, AppColors.accent),
-          _Stat('Active Seasons', p.activeSeasons.length.toString(), Icons.event_rounded, AppColors.success),
+          _Stat('Areas', (p.allPlaces.length - 1).toString(), Icons.location_on_rounded, AppColors.accent),
+          _Stat('Categories', p.categories.length.toString(), Icons.category_rounded, AppColors.success),
         ];
         return LayoutBuilder(builder: (context, constraints) {
           final crossCount = constraints.maxWidth > 600 ? 4 : 2;

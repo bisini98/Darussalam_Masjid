@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../providers/app_providers.dart';
-import '../theme/app_theme.dart';
-import 'main_shell.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
